@@ -1,54 +1,80 @@
 #include <stdio.h>
 #include <string.h>
-char inp[100], stack[100];
-int len, top = -1;
-void print_details(int ind, const char *action) {
-printf("$");
-for (int i = 0; i <= top; i++)
-printf("%c", stack[i]);
-printf("\t\t");
-for (int i = ind; i < len; i++)
-printf("%c", inp[i]);
-printf("$\t\t%s\n", action);
-}void check_for_reduce(int i) {
-int flag = 1;
-while (flag) {
-flag = 0;
-if (top >= 2 && stack[top - 2] == 'S' && stack[top - 1] == '+' && stack[top] == 'S') {
-print_details(i + 1, "REDUCE: S -> S+S");
-stack[top - 2] = 'S';
-top -= 2;
-flag = 1;
-} else if (top >= 2 && stack[top - 2] == 'S' && stack[top - 1] == '-' && stack[top] == 'S') {
-print_details(i + 1, "REDUCE: S -> S-S");
-stack[top - 2] = 'S';
-top -= 2;
-flag = 1;
-} else if (top >= 2 && stack[top - 2] == '(' && stack[top - 1] == 'S' && stack[top] == ')') {
-print_details(i + 1, "REDUCE: S -> (S)");
-stack[top - 2] = 'S';
-top -= 2;
-flag = 1;
-} else if (top >= 0 && stack[top] == 'i') {
-print_details(i + 1, "REDUCE: S -> i");
-stack[top] = 'S';
-flag = 1;
+char input[50], stack[50];
+int top = -1, ip = 0;
+void push(char c) {
+stack[++top] = c;
+stack[top+1] = '\0';
+}
+void popn(int n) {
+top -= n;
+stack[top+1] = '\0';
+}
+void printAction(const char *action) {
+char inputWithDollar[50];
+snprintf(inputWithDollar, sizeof(inputWithDollar), "%s$", &input[ip]);
+printf("\n%-15s %-15s %-15s", stack, inputWithDollar, action);
+}
+void check() {
+// Reduction: id → E
+for (int k = 0; k <= top; k++) {
+if (stack[k] == 'i' && stack[k+1] == 'd') {
+stack[k] = 'E';
+// remove 'd'
+for (int t = k+1; t <= top; t++)
+stack[t] = stack[t+1];
+top--;
+printAction("REDUCE TO E");
 }
 }
-void main() {
-printf("Enter input string:\n");
-scanf("%s", inp);
-len = strlen(inp);
-printf("\n%-16s%-16s%-s\n", "Stack", "Input", "Action");
-printf("----------------------------------------------------------\n");
-for (int i = 0; i < len; i++) {
-top++;
-stack[top] = inp[i];
-print_details(i + 1, "SHIFT");
-check_for_reduce(i);
-} if (top == 0 && stack[0] == 'S') {
-printf("%-16s%-16c%-s\n", "$S", '$', "ACCEPT");
-printf("\nResult: Accepted.\n");
+// Reduction: E+E → E
+for (int k = 0; k <= top-2; k++) {
+if (stack[k] == 'E' && stack[k+1] == '+' && stack[k+2] == 'E') {
+stack[k] = 'E';
+popn(2); // remove +E
+printAction("REDUCE TO E");
+}
+}
+// Reduction: E*E → E
+for (int k = 0; k <= top-2; k++) {
+if (stack[k] == 'E' && stack[k+1] == '*' && stack[k+2] == 'E') {
+stack[k] = 'E';
+popn(2); // remove *E
+printAction("REDUCE TO E");
+}
+}
+// Reduction: (E) → E
+for (int k = 0; k <= top-2; k++) {
+if (stack[k] == '(' && stack[k+1] == 'E' && stack[k+2] == ')') {
+stack[k] = 'E';
+popn(2); // remove E)
+printAction("REDUCE TO E");
+}
+}
+}
+int main() {
+printf("GRAMMAR is:\n");
+printf("E -> E+E\nE -> E*E\nE -> (E)\nE -> id\n");
+printf("\nEnter input string: ");
+scanf("%s", input);
+printf("\n%-15s %-15s %-15s", "Stack", "Input", "Action");
+while (input[ip] != '\0') {
+if (input[ip] == 'i' && input[ip+1] == 'd') {
+push('i');
+push('d');
+ip += 2;
+printAction("SHIFT -> id");
+check();
 } else {
-printf("\nResult: Rejected.\n");
-} }
+push(input[ip]);
+ip++;
+printAction("SHIFT -> symbol");
+check();
+}
+}
+if (strcmp(stack, "E") == 0)
+printf("\n\nString Accepted.\n");
+else
+printf("\n\nString Rejected.\n");
+return 0;
+}
