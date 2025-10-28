@@ -1,41 +1,34 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
-
+void yyerror(const char *s);
 int yylex();
-int yyerror(const char *s);
 %}
-
-%token FOR ID NUM RELOP
-
+%token FOR ID NUM RELOP INCR DECR
 %%
-
 stmt:
-    FOR '(' assign ';' condition ';' increment ')' ';'
-        { printf("Valid for loop syntax\n"); }
-    ;
-
-assign:
-    ID '=' NUM
-    ;
-
+ FOR '(' assign_stmt ';' condition ';' assign_stmt ')' block
+ {
+ printf("Valid for loop syntax\n");
+ }
+;
+assign_stmt:
+ ID '=' NUM // i = 0
+ | ID INCR // i++
+ | ID DECR // i--
+;
 condition:
-    ID RELOP NUM
-    ;
-
-increment:
-    ID '=' ID '+' NUM
-    ;
-
+ ID RELOP NUM
+;
+block:
+ '{' '}'
+;
 %%
-
-int yyerror(const char *s) {
-    printf("Syntax Error\n");
-    return 0;
+void yyerror(const char *s) {
+ fprintf(stderr, "Syntax error: %s\n", s);
 }
-
 int main() {
-    printf("Enter a 'for' loop statement:\n");
-    yyparse();
-    return 0;
+ printf("Enter a for loop:\n");
+ yyparse();
+ return 0;
 }
